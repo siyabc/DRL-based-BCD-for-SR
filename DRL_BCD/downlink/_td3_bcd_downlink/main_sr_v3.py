@@ -8,7 +8,6 @@ import csv
 import math
 import pandas as pd
 
-
 def step(o, a, label):
     G = o[0:9].reshape(3, 3)
     w = o[9:12].reshape(3, 1)
@@ -86,11 +85,11 @@ if __name__ == '__main__':
     td3 = TD3(obs_dim, act_dim)
 
     # MAX_EPISODE = len(sr_data)
-    MAX_EPISODE = 150
-    MAX_STEP = 5000
-    update_every = 200 # 100
-    batch_size = 20
-    start_update = 20 # 10
+    MAX_EPISODE = 1000 # 这里指的是第几个样本
+    MAX_STEP = 10000
+    update_every = 250 # 100
+    batch_size = 80
+    start_update = 200 # 10
 
 
     all_rewardList = []
@@ -108,7 +107,6 @@ if __name__ == '__main__':
 
         for episode in range(MAX_EPISODE):
             # o = env.reset()
-
             o_init = np.append(np.array(sr_data[episode]), np.random.rand(3)*0.1)
             label = np.array(sr_target[episode])
 

@@ -65,8 +65,8 @@ class TD3:
         self.pi_optimizer = Adam(self.ac.pi.parameters(), lr=pi_lr)
         self.q_optimizer = Adam(self.q_params, lr=q_lr)
 
-        # Experience buffer
-        replay_buffer = ReplayBuffer(obs_dim=obs_dim, act_dim=act_dim, size=replay_size)
+        # # Experience buffer
+        # replay_buffer = ReplayBuffer(obs_dim=obs_dim, act_dim=act_dim, size=replay_size)
 
     def compute_loss_q(self,data):
         o, a, r, o2, d = data['obs'], data['act'], data['rew'], data['obs2'], data['done']
