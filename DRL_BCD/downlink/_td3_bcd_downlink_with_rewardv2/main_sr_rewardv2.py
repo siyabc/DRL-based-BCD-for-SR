@@ -1,7 +1,7 @@
 # 对于多个样例来训练
 # 用来出result
 
-from td3_sr_v3 import TD3
+from td3_sr_rewardv2 import TD3
 import matplotlib.pyplot as plt
 import numpy as np
 import csv
@@ -27,14 +27,20 @@ def step(o, a, label):
     obj_updated = w.T.dot(np.log(1 + gamma))[0]
     obj_star = w.T.dot(np.log(1 + gamma_star))[0]
     reward = - (np.abs(obj_updated-obj_star))**2
+    # reward = obj_updated
+
     # reward = - np.linalg.norm(gamma - gamma_star, 1)
     # print("a:", a)
     # print("gamma:", gamma)
     # print("gamma_star:", gamma_star)
     # print("reward:", reward)
+    old_gamma = o[-3:]
+    obj_old = w.T.dot(np.log(1 + old_gamma))[0]
+    # reward = - (np.abs(obj_updated - obj_old)) ** 2
+
     o2 = np.append(o[:-3], gamma)
     d = False
-    if reward >= -1e-3:
+    if reward >= -1e-4:
         d = True
     return o2, reward, d
 
@@ -85,11 +91,11 @@ if __name__ == '__main__':
     td3 = TD3(obs_dim, act_dim)
 
     # MAX_EPISODE = len(sr_data)
-    MAX_EPISODE = 1000 # 这里指的是第几个样本
+    MAX_EPISODE = 100 # 这里指的是第几个样本
     MAX_STEP = 10000
     update_every = 250 # 100
     batch_size = 20
-    start_update = 100 # 10
+    start_update = 20 # 10
 
 
     all_rewardList = []
