@@ -87,17 +87,17 @@ if __name__ == '__main__':
     td3 = TD3(obs_dim, act_dim)
 
     # MAX_EPISODE = len(sr_data)
-    MAX_EPISODE = 100 # 这里指的是第几个样本
+    MAX_EPISODE = 1000  # 这里指的是第几个样本
     MAX_STEP = 5000
-    update_every = 200 # 100
+    update_every = 250  # 100
     batch_size = 20
-    start_update = 20 # 10
+    start_update = 100  # 10
 
 
     all_rewardList = []
     all_err_list = []
     all_stop_step_list = []
-    obj_err_list = []
+    all_obj_err_list = []
     epoch_num = 1
 
     for epoch in range(epoch_num):
@@ -107,6 +107,7 @@ if __name__ == '__main__':
         err_list = []
         stop_step_list = []
         outlier_list = []
+        obj_err_list = []
 
         for episode in range(MAX_EPISODE):
             # o = env.reset()
@@ -172,53 +173,78 @@ if __name__ == '__main__':
 
         plt.figure(figsize=(18, 4))
 
-        plt.subplot(1, 4, 1)
-        plt.plot(np.arange(len(rewardList)), rewardList)
-        plt.xlabel("Episode", fontsize=10)
-        plt.ylabel("Reward", fontsize=10)
+        # plt.subplot(1, 4, 1)
+        # plt.plot(np.arange(len(rewardList)), rewardList)
+        # plt.xlabel("Episode", fontsize=10)
+        # plt.ylabel("Reward", fontsize=10)
+        #
+        # plt.subplot(1, 4, 2)
+        # plt.plot(np.arange(len(err_list)), err_list)
+        # plt.xlabel("Episode", fontsize=10)
+        # plt.ylabel("SINR error", fontsize=10)
+        #
+        # plt.subplot(1, 4, 3)
+        # plt.plot(np.arange(len(obj_err_list)), obj_err_list)
+        # plt.xlabel("Episode", fontsize=10)
+        # plt.ylabel("Sum rate error", fontsize=10)
+        #
+        # plt.subplot(1, 4, 4)
+        # plt.plot(np.arange(len(stop_step_list)), stop_step_list)
+        # plt.xlabel("Episode", fontsize=10)
+        # plt.ylabel("Iteration steps", fontsize=10)
+        #
+        # plt.title("td3_v2")
+        #
+        # plt.savefig("res_v1.pdf")
+        # plt.show()
 
-        plt.subplot(1, 4, 2)
-        plt.plot(np.arange(len(err_list)), err_list)
-        plt.xlabel("Episode", fontsize=10)
-        plt.ylabel("SINR error", fontsize=10)
+        # all_rewardList.append(rewardList)
+        # all_err_list.append(err_list)
+        # all_stop_step_list.append(stop_step_list)
+        all_rewardList=all_rewardList+rewardList
+        all_err_list=all_err_list+err_list
+        all_obj_err_list = all_obj_err_list + obj_err_list
+        all_stop_step_list=all_stop_step_list+stop_step_list
 
-        plt.subplot(1, 4, 3)
-        plt.plot(np.arange(len(obj_err_list)), obj_err_list)
-        plt.xlabel("Episode", fontsize=10)
-        plt.ylabel("Sum rate error", fontsize=10)
+    plt.subplot(1, 4, 1)
+    plt.plot(np.arange(len(all_rewardList)), all_rewardList)
+    plt.xlabel("Episode", fontsize=10)
+    plt.ylabel("Reward", fontsize=10)
 
-        plt.subplot(1, 4, 4)
-        plt.plot(np.arange(len(stop_step_list)), stop_step_list)
-        plt.xlabel("Episode", fontsize=10)
-        plt.ylabel("Iteration steps", fontsize=10)
+    plt.subplot(1, 4, 2)
+    plt.plot(np.arange(len(all_err_list)), all_err_list)
+    plt.xlabel("Episode", fontsize=10)
+    plt.ylabel("SINR error", fontsize=10)
 
-        plt.title("td3_v2")
+    plt.subplot(1, 4, 3)
+    plt.plot(np.arange(len(all_obj_err_list)), all_obj_err_list)
+    plt.xlabel("Episode", fontsize=10)
+    plt.ylabel("Sum rate error", fontsize=10)
 
-        plt.savefig("res_v1.pdf")
-        plt.show()
+    plt.subplot(1, 4, 4)
+    plt.plot(np.arange(len(all_stop_step_list)), all_stop_step_list)
+    plt.xlabel("Episode", fontsize=10)
+    plt.ylabel("Iteration steps", fontsize=10)
 
-        all_rewardList.append(rewardList)
-        all_err_list.append(err_list)
-        all_stop_step_list.append(stop_step_list)
+    plt.title("td3_v2")
 
-        # data_pd = pd.DataFrame(all_rewardList)
-        # data_pd.to_csv('res_reward_v1.csv')
-    arr_rewardList = np.array(all_rewardList)
-    arr_err_list = np.array(all_err_list)
-    arr_stop_step_list = np.array(all_stop_step_list)
+    plt.savefig("res_v1.pdf")
+    plt.show()
 
-    with open('res/res_reward_v3_startupdat10.csv', 'w', newline='') as file:
-        for i in range(MAX_EPISODE):
-            mywriter = csv.writer(file, delimiter=',')
-            a = np.array(arr_rewardList[:, i])
-            mywriter.writerow(a)
-    with open('res/res_err_v3_startupdat10.csv', 'w', newline='') as file:
-        for i in range(MAX_EPISODE):
-            mywriter = csv.writer(file, delimiter=',')
-            a = np.array(arr_err_list[:, i])
-            mywriter.writerow(a)
-    with open('res/res_step_v3_startupdat10.csv', 'w', newline='') as file:
-        for i in range(MAX_EPISODE):
-            mywriter = csv.writer(file, delimiter=',')
-            a = np.array(arr_stop_step_list[:, i])
-            mywriter.writerow(a)
+    with open('res/res_reward_v2.csv', 'w', newline='') as file:
+        mywriter = csv.writer(file, delimiter=',')  # 移到循环外部
+        mywriter.writerow(all_rewardList)
+
+
+    with open('res/res_err_v2.csv', 'w', newline='') as file:
+        mywriter = csv.writer(file, delimiter=',')  # 移到循环外部
+        mywriter.writerow(all_err_list)
+
+
+    with open('res/obj_err_v2.csv', 'w', newline='') as file:
+        mywriter = csv.writer(file, delimiter=',')  # 移到循环外部
+        mywriter.writerow(all_obj_err_list)
+
+    with open('res/res_step_v2.csv', 'w', newline='') as file:
+        mywriter = csv.writer(file, delimiter=',')  # 移到循环外部
+        mywriter.writerow(all_stop_step_list)

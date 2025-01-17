@@ -215,19 +215,20 @@ if __name__ == '__main__':
     arr_err_list = np.array(all_err_list)
     arr_stop_step_list = np.array(all_stop_step_list)
 
-
     with open('res/res_reward_v3_startupdat10.csv', 'w', newline='') as file:
+        mywriter = csv.writer(file, delimiter=',')  # 移到循环外部
         for i in range(MAX_EPISODE):
-            mywriter = csv.writer(file, delimiter=',')
-            a = np.array(arr_rewardList[:,i])
+            a = np.array(arr_rewardList[:, i])
             mywriter.writerow(a)
+
     with open('res/res_err_v3_startupdat10.csv', 'w', newline='') as file:
+        mywriter = csv.writer(file, delimiter=',')  # 移到循环外部
         for i in range(MAX_EPISODE):
-            mywriter = csv.writer(file, delimiter=',')
             a = np.array(arr_err_list[:, i])
             mywriter.writerow(a)
+
     with open('res/res_step_v3_startupdat10.csv', 'w', newline='') as file:
+        mywriter = csv.writer(file, delimiter=',')  # 移到循环外部
         for i in range(MAX_EPISODE):
-            mywriter = csv.writer(file, delimiter=',')
             a = np.array(arr_stop_step_list[:, i])
             mywriter.writerow(a)

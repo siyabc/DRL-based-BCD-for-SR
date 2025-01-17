@@ -86,7 +86,7 @@ if __name__ == '__main__':
 
     # MAX_EPISODE = len(sr_data)
     MAX_EPISODE = 1000 # 这里指的是第几个样本
-    MAX_STEP = 10000
+    MAX_STEP = 5000
     update_every = 250 # 100
     batch_size = 20
     start_update = 100 # 10

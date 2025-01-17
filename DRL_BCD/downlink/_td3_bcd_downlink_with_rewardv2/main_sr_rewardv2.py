@@ -1,5 +1,5 @@
 # 对于多个样例来训练
-# 用来出result
+# reward function 是- (np.abs(obj_updated - obj_old)) ** 2
 
 from td3_sr_rewardv2 import TD3
 import matplotlib.pyplot as plt
