@@ -3,7 +3,7 @@ import itertools
 import numpy as np
 import torch
 from torch.optim import Adam
-import core_sr_v3 as core_sr
+import core_sr as core_sr
 
 
 class ReplayBuffer:
