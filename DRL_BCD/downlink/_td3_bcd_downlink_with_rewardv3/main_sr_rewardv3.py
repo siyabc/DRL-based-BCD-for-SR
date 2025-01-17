@@ -1,7 +1,7 @@
 # 对于多个样例来训练
-# 用来出result
+# reward function 选为 sum rate
 
-from td3_sr_rewardv2 import TD3
+from td3_sr_rewardv3 import TD3
 import matplotlib.pyplot as plt
 import numpy as np
 import csv
@@ -24,27 +24,32 @@ def step(o, a, label):
     til_gamma = iteration_3u_v2(B, b)
     gamma = np.exp(til_gamma)
 
+
     obj_updated = w.T.dot(np.log(1 + gamma))[0]
     obj_star = w.T.dot(np.log(1 + gamma_star))[0]
-    # reward = - (np.abs(obj_updated-obj_star))**2
-    # reward = obj_updated
+    obj_err = abs(np.abs(obj_updated-obj_star))/obj_star
+    # print("===obj_updated:", obj_updated)
+    # print("---obj_star:", obj_star)
 
-    # reward = - np.linalg.norm(gamma - gamma_star, 1)
-    # print("a:", a)
-    # print("gamma:", gamma)
-    # print("gamma_star:", gamma_star)
-    # print("reward:", reward)
     old_gamma = o[-3:]
     obj_old = w.T.dot(np.log(1 + old_gamma))[0]
-    reward = - (np.abs(obj_updated - obj_old)) ** 2
+    # print("===old_gamma:", old_gamma)
+    # print("---gamma:", gamma,"****gamma_star:", gamma_star)
+    # print("===obj_old:", obj_old)
+    # print("---obj_updated:", obj_updated)
+    # print('-------------------------------')
+
+    reward = obj_updated
+    delta_reward = np.abs(obj_updated - obj_old)
+    # print("===delta_reward:", delta_reward)
 
     o2 = np.append(o[:-3], gamma)
     d = False
-    if reward >= -1e-4:
+    if delta_reward <= 1e-2:
         d = True
-    # reward = obj_updated#
-    # d = False
-    return o2, reward, d
+    d = False
+
+    return o2, reward, d, obj_err
 
 
 def iteration_3u_v2(B, b):
@@ -93,11 +98,11 @@ if __name__ == '__main__':
     td3 = TD3(obs_dim, act_dim)
 
     # MAX_EPISODE = len(sr_data)
-    MAX_EPISODE = 80 # 这里指的是第几个样本
-    MAX_STEP = 5000
-    update_every = 250 # 100
+    MAX_EPISODE = 100 # 这里指的是第几个样本
+    MAX_STEP = 8000
+    update_every = 100 # 100
     batch_size = 20
-    start_update = 20 # 10
+    start_update = 30 # 10
 
 
     all_rewardList = []
@@ -112,6 +117,7 @@ if __name__ == '__main__':
         err_list = []
         stop_step_list = []
         outlier_list = []
+        obj_err_list = []
 
         for episode in range(MAX_EPISODE):
             # o = env.reset()
@@ -136,7 +142,7 @@ if __name__ == '__main__':
 
                 # ======================
                 # next state
-                o2, r, d = step(o, a, label)
+                o2, r, d, obj_err = step(o, a, label)
 
                 # ======================
 
@@ -152,7 +158,7 @@ if __name__ == '__main__':
                 if d: break
             gamma = o[-3:]
             err = np.linalg.norm(gamma-label)
-            print('Episode:', episode,'gamma:', gamma,'label:', label,'==========', 'Reward:',ep_reward, 'err:', err, 'j:', stop_step)
+            print('Episode:', episode,'gamma:', gamma,'label:', label,'==========', 'Reward:',ep_reward, 'err:', err,'---', 'obj_err:',obj_err, 'j:', stop_step)
             # print('Episode:', episode, '====Reward:',ep_reward, '****err:', err, 'j:', stop_step)
 
             # print('gamma:', o)
@@ -161,6 +167,7 @@ if __name__ == '__main__':
                 print("a:", a)
             rewardList.append(ep_reward)
             err_list.append(err)
+            obj_err_list.append(obj_err)
             stop_step_list.append(stop_step)
             if episode > 50 and stop_step>=1000:
                 outlier_list.append(episode)
@@ -173,19 +180,24 @@ if __name__ == '__main__':
 
         print("outlier_list:", outlier_list)
 
-        plt.figure(figsize=(18, 5))
+        plt.figure(figsize=(18, 4))
 
-        plt.subplot(1, 3, 1)
+        plt.subplot(1, 4, 1)
         plt.plot(np.arange(len(rewardList)), rewardList)
         plt.xlabel("Episode", fontsize=10)
         plt.ylabel("Reward", fontsize=10)
 
-        plt.subplot(1, 3, 2)
+        plt.subplot(1, 4, 2)
         plt.plot(np.arange(len(err_list)), err_list)
         plt.xlabel("Episode", fontsize=10)
         plt.ylabel("SINR error", fontsize=10)
 
-        plt.subplot(1, 3, 3)
+        plt.subplot(1, 4, 3)
+        plt.plot(np.arange(len(obj_err_list)), obj_err_list)
+        plt.xlabel("Episode", fontsize=10)
+        plt.ylabel("Sum rate error", fontsize=10)
+
+        plt.subplot(1, 4, 4)
         plt.plot(np.arange(len(stop_step_list)), stop_step_list)
         plt.xlabel("Episode", fontsize=10)
         plt.ylabel("Iteration steps", fontsize=10)

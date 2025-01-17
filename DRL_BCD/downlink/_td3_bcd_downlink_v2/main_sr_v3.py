@@ -1,7 +1,7 @@
 # 对于多个样例来训练
 # 用来出result
 
-from td3_sr_rewardv2 import TD3
+from td3_sr_v3 import TD3
 import matplotlib.pyplot as plt
 import numpy as np
 import csv
@@ -26,25 +26,19 @@ def step(o, a, label):
 
     obj_updated = w.T.dot(np.log(1 + gamma))[0]
     obj_star = w.T.dot(np.log(1 + gamma_star))[0]
-    # reward = - (np.abs(obj_updated-obj_star))**2
-    # reward = obj_updated
+    reward = - (np.abs(obj_updated-obj_star))**2
+    obj_err = abs(np.abs(obj_updated - obj_star)) / obj_star
 
     # reward = - np.linalg.norm(gamma - gamma_star, 1)
     # print("a:", a)
     # print("gamma:", gamma)
     # print("gamma_star:", gamma_star)
     # print("reward:", reward)
-    old_gamma = o[-3:]
-    obj_old = w.T.dot(np.log(1 + old_gamma))[0]
-    reward = - (np.abs(obj_updated - obj_old)) ** 2
-
     o2 = np.append(o[:-3], gamma)
     d = False
-    if reward >= -1e-4:
+    if reward >= -1e-3:
         d = True
-    # reward = obj_updated#
-    # d = False
-    return o2, reward, d
+    return o2, reward, d, obj_err
 
 
 def iteration_3u_v2(B, b):
@@ -93,9 +87,9 @@ if __name__ == '__main__':
     td3 = TD3(obs_dim, act_dim)
 
     # MAX_EPISODE = len(sr_data)
-    MAX_EPISODE = 80 # 这里指的是第几个样本
-    MAX_STEP = 5000
-    update_every = 250 # 100
+    MAX_EPISODE = 100 # 这里指的是第几个样本
+    MAX_STEP = 10000
+    update_every = 200 # 100
     batch_size = 20
     start_update = 20 # 10
 
@@ -103,6 +97,7 @@ if __name__ == '__main__':
     all_rewardList = []
     all_err_list = []
     all_stop_step_list = []
+    obj_err_list = []
     epoch_num = 1
 
     for epoch in range(epoch_num):
@@ -136,7 +131,7 @@ if __name__ == '__main__':
 
                 # ======================
                 # next state
-                o2, r, d = step(o, a, label)
+                o2, r, d, obj_err = step(o, a, label)
 
                 # ======================
 
@@ -152,17 +147,19 @@ if __name__ == '__main__':
                 if d: break
             gamma = o[-3:]
             err = np.linalg.norm(gamma-label)
-            print('Episode:', episode,'gamma:', gamma,'label:', label,'==========', 'Reward:',ep_reward, 'err:', err, 'j:', stop_step)
+            print('Episode:', episode, 'gamma:', gamma, 'label:', label, '==========', 'Reward:', ep_reward, 'err:',
+                  err, '---', 'obj_err:', obj_err, 'j:', stop_step)
             # print('Episode:', episode, '====Reward:',ep_reward, '****err:', err, 'j:', stop_step)
 
             # print('gamma:', o)
             # print("a:", a)
-            if math.isnan (ep_reward):
+            if math.isnan(ep_reward):
                 print("a:", a)
             rewardList.append(ep_reward)
             err_list.append(err)
+            obj_err_list.append(obj_err)
             stop_step_list.append(stop_step)
-            if episode > 50 and stop_step>=1000:
+            if episode > 50 and stop_step >= 1000:
                 outlier_list.append(episode)
 
         print("rewardList:", rewardList)
@@ -173,19 +170,24 @@ if __name__ == '__main__':
 
         print("outlier_list:", outlier_list)
 
-        plt.figure(figsize=(18, 5))
+        plt.figure(figsize=(18, 4))
 
-        plt.subplot(1, 3, 1)
+        plt.subplot(1, 4, 1)
         plt.plot(np.arange(len(rewardList)), rewardList)
         plt.xlabel("Episode", fontsize=10)
         plt.ylabel("Reward", fontsize=10)
 
-        plt.subplot(1, 3, 2)
+        plt.subplot(1, 4, 2)
         plt.plot(np.arange(len(err_list)), err_list)
         plt.xlabel("Episode", fontsize=10)
         plt.ylabel("SINR error", fontsize=10)
 
-        plt.subplot(1, 3, 3)
+        plt.subplot(1, 4, 3)
+        plt.plot(np.arange(len(obj_err_list)), obj_err_list)
+        plt.xlabel("Episode", fontsize=10)
+        plt.ylabel("Sum rate error", fontsize=10)
+
+        plt.subplot(1, 4, 4)
         plt.plot(np.arange(len(stop_step_list)), stop_step_list)
         plt.xlabel("Episode", fontsize=10)
         plt.ylabel("Iteration steps", fontsize=10)
@@ -197,17 +199,16 @@ if __name__ == '__main__':
         all_err_list.append(err_list)
         all_stop_step_list.append(stop_step_list)
 
-    # data_pd = pd.DataFrame(all_rewardList)
-    # data_pd.to_csv('res_reward_v1.csv')
+        # data_pd = pd.DataFrame(all_rewardList)
+        # data_pd.to_csv('res_reward_v1.csv')
     arr_rewardList = np.array(all_rewardList)
     arr_err_list = np.array(all_err_list)
     arr_stop_step_list = np.array(all_stop_step_list)
 
-
     with open('res/res_reward_v3_startupdat10.csv', 'w', newline='') as file:
         for i in range(MAX_EPISODE):
             mywriter = csv.writer(file, delimiter=',')
-            a = np.array(arr_rewardList[:,i])
+            a = np.array(arr_rewardList[:, i])
             mywriter.writerow(a)
     with open('res/res_err_v3_startupdat10.csv', 'w', newline='') as file:
         for i in range(MAX_EPISODE):
