@@ -10,7 +10,9 @@ def combined_shape(length, shape=None):
         return (length,)
     return (length, shape) if np.isscalar(shape) else (length, *shape)
 
+# def mlp(sizes, activation, output_activation=nn.Softmax):
 def mlp(sizes, activation, output_activation=nn.Identity):
+
     layers = []
     for j in range(len(sizes)-1):
         act = activation if j < len(sizes)-2 else output_activation

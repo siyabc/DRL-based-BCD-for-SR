@@ -3,7 +3,7 @@ import itertools
 import numpy as np
 import torch
 from torch.optim import Adam
-import core_sr_v3 as core_sr
+import core_sr_rewardv3 as core_sr
 
 
 class ReplayBuffer:
@@ -143,5 +143,5 @@ class TD3:
         a += noise_scale * np.random.rand(self.act_dim)
         # print("a2:", a)
 
-        # return np.clip(a, 0, 1)
-        return a
+        return np.clip(a, 0, 1)
+        # return a
