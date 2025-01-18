@@ -214,22 +214,22 @@ def main(MAX_EPISODE=150,MAX_STEP=10000,update_every=200,batch_size=50,start_upd
 
 
 if __name__ == '__main__':
-    MAX_EPISODE_list = [5,6]  # 这里指的是第几个样本
-    MAX_STEP_list = [200]
-    update_every_list = [20]  # 100
-    batch_size_list = [20]
-    start_update_list = [2]  # 10
-    lr_list = [1e-6,1e-5]
-    gamma_list = [0.99]
-
-
-    # MAX_EPISODE_list = [150]  # 这里指的是第几个样本
-    # MAX_STEP_list = [10000,15000,20000]
-    # update_every_list = [200 ] # 100
-    # batch_size_list = [20,50,80]
-    # start_update_list = [50] # 10
+    # MAX_EPISODE_list = [5,6]  # 这里指的是第几个样本
+    # MAX_STEP_list = [200]
+    # update_every_list = [20]  # 100
+    # batch_size_list = [20]
+    # start_update_list = [2]  # 10
     # lr_list = [1e-6,1e-5]
     # gamma_list = [0.99]
+
+
+    MAX_EPISODE_list = [150]  # 这里指的是第几个样本
+    MAX_STEP_list = [10000,15000,20000]
+    update_every_list = [200 ] # 100
+    batch_size_list = [20,50,80]
+    start_update_list = [50] # 10
+    lr_list = [1e-6,1e-5]
+    gamma_list = [0.99]
     #
     for MAX_EPISODE in MAX_EPISODE_list:
         for start_update in start_update_list:
