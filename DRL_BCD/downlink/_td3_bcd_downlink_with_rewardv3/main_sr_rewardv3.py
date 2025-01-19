@@ -59,7 +59,7 @@ def iteration_3u_v2(B, b):
     z0 = z[0]
     z1 = z[1]
     z2 = z[2]
-    tol = 10e-9
+    tol = 10e-5
     err = 1
     # print("B:", np.reshape(B, (1,9)))
 
@@ -78,15 +78,13 @@ def iteration_3u_v2(B, b):
     # print("b:", b)
     # print("Z:", z0, z1, z2)
     res = B.dot(z)
-    # print(np.log(z[0] / res[0]))
-    # print(np.log(z[1] / res[1]))
-    # print(np.log(z[2] / res[2]))
     til_gamma = np.array([np.log(z[0] / res[0]),np.log(z[1] / res[1]),np.log(z[2] / res[2])])
 
     return til_gamma
 
-
-if __name__ == '__main__':
+def main(MAX_EPISODE=150,MAX_STEP=10000,update_every=200,batch_size=50,start_update=50,
+         replay_size=int(1e5), gamma=0.9, pi_lr=1e-6,q_lr=1e-6, policy_delay=5):
+    filename = f"res/rewardv3_ME{MAX_EPISODE}_SU{start_update}_Ga{gamma}_UE{update_every}_BS{batch_size}_lr{lr}_MS{MAX_STEP}"+'.pdf'
     sr_data = list()
     sr_target = list()
     with open("res/data1.csv", "r") as csvfile:
@@ -97,15 +95,8 @@ if __name__ == '__main__':
 
     obs_dim = 19
     act_dim = 3
-    td3 = TD3(obs_dim, act_dim)
-
-    # MAX_EPISODE = len(sr_data)
-    MAX_EPISODE = 130  # 这里指的是第几个样本
-    MAX_STEP = 12000
-    update_every = 100  # 100
-    batch_size = 30
-    start_update = 40  # 10
-
+    td3 = TD3(obs_dim=obs_dim, act_dim=act_dim,replay_size=replay_size, gamma=gamma, pi_lr=pi_lr, q_lr=q_lr,
+                 act_noise=0.05, target_noise=0.05, noise_clip=0.5, policy_delay=policy_delay)
 
     all_rewardList = []
     all_err_list = []
@@ -114,8 +105,8 @@ if __name__ == '__main__':
     epoch_num = 1
 
     for epoch in range(epoch_num):
-        print("epoch:", epoch)
 
+        print("epoch:", epoch)
         rewardList = []
         err_list = []
         stop_step_list = []
@@ -123,30 +114,20 @@ if __name__ == '__main__':
         obj_err_list = []
 
         for episode in range(MAX_EPISODE):
+            j_converge_list = [MAX_STEP]
             # o = env.reset()
-            o_init = np.append(np.array(sr_data[episode]), np.random.rand(3)*0.1)
+            o_init = np.append(np.array(sr_data[episode]), np.random.rand(3) * 0.1)
             label = np.array(sr_target[episode])
 
             o = o_init
             ep_reward = 0
             stop_step = 0
-            j_converge_list = [MAX_STEP]
             for j in range(MAX_STEP):
-                # if episode > 20:
-                #     a = td3.get_action(o, td3.act_noise) * 2
-                # else:
-                #     a = env.action_space.sample()
-                # a = td3.get_action(o, td3.act_noise) * 2
                 a = td3.get_action(o, 0.001)
-                # print("==a:", a)
-                # if sum(a) <=0:
-                #     print("==a:", a)
-                #     continue
-                # o2, r, d, _ = env.step(a)
-
+                # ======================
                 # ======================
                 # next state
-                o2, r, d, obj_err,reward_acc = step(o, a, label)
+                o2, r, d, obj_err, reward_acc = step(o, a, label)
 
                 # ======================
 
@@ -158,69 +139,35 @@ if __name__ == '__main__':
 
                 o = o2
                 ep_reward += reward_acc
-                stop_step = j
+
                 if d:
                     j_converge_list.append(j)
                     # break
             gamma = o[-3:]
-            err = np.linalg.norm(gamma-label)
+            err = np.linalg.norm(gamma - label)
+            converge_step = min(j_converge_list)
             print('Episode:', episode, 'gamma:', gamma, 'label:', label, '==========', 'Reward:', ep_reward, 'err:',
                   err, '---', 'obj_err:', obj_err, 'j:', min(j_converge_list))
             # print('Episode:', episode, '====Reward:',ep_reward, '****err:', err, 'j:', stop_step)
-
-            # print('gamma:', o)
-            # print("a:", a)
             if math.isnan(ep_reward):
                 print("a:", a)
             rewardList.append(ep_reward)
             err_list.append(err)
             obj_err_list.append(obj_err)
-            stop_step_list.append(stop_step)
-            if episode > 50 and stop_step >= 1000:
+            stop_step_list.append(converge_step)
+            if episode > 50 and converge_step >= 1000:
                 outlier_list.append(episode)
 
         print("rewardList:", rewardList)
         print("err_list:", err_list)
         print("stop_step_list:", stop_step_list)
-
-        # print("outlier_list:", outlier_list)
-
         print("outlier_list:", outlier_list)
 
         plt.figure(figsize=(18, 4))
-
-        # plt.subplot(1, 4, 1)
-        # plt.plot(np.arange(len(rewardList)), rewardList)
-        # plt.xlabel("Episode", fontsize=10)
-        # plt.ylabel("Reward", fontsize=10)
-        #
-        # plt.subplot(1, 4, 2)
-        # plt.plot(np.arange(len(err_list)), err_list)
-        # plt.xlabel("Episode", fontsize=10)
-        # plt.ylabel("SINR error", fontsize=10)
-        #
-        # plt.subplot(1, 4, 3)
-        # plt.plot(np.arange(len(obj_err_list)), obj_err_list)
-        # plt.xlabel("Episode", fontsize=10)
-        # plt.ylabel("Sum rate error", fontsize=10)
-        #
-        # plt.subplot(1, 4, 4)
-        # plt.plot(np.arange(len(stop_step_list)), stop_step_list)
-        # plt.xlabel("Episode", fontsize=10)
-        # plt.ylabel("Iteration steps", fontsize=10)
-        #
-        # plt.title("td3_v2")
-        #
-        # plt.savefig("res_v1.pdf")
-        # plt.show()
-
-        # all_rewardList.append(rewardList)
-        # all_err_list.append(err_list)
-        # all_stop_step_list.append(stop_step_list)
-        all_rewardList=all_rewardList+rewardList
-        all_err_list=all_err_list+err_list
+        all_rewardList = all_rewardList + rewardList
+        all_err_list = all_err_list + err_list
         all_obj_err_list = all_obj_err_list + obj_err_list
-        all_stop_step_list=all_stop_step_list+stop_step_list
+        all_stop_step_list = all_stop_step_list + stop_step_list
 
     plt.subplot(1, 4, 1)
     plt.plot(np.arange(len(all_rewardList)), all_rewardList)
@@ -242,25 +189,66 @@ if __name__ == '__main__':
     plt.xlabel("Episode", fontsize=10)
     plt.ylabel("Iteration steps", fontsize=10)
 
-    plt.title("td3_rewardv3")
+    plt.title("main_sr_rewardv3")
 
-    plt.savefig("res_v1.pdf")
-    plt.show()
+    # filename = MAX_EPISODE=150,MAX_STEP=10000,update_every=200,batch_size=50,start_update=50,
+    #      replay_size=int(1e5), gamma=0.9, pi_lr=1e-6,q_lr=1e-6, policy_delay=5
 
-    with open('res/res_reward_rewardv3.csv', 'w', newline='') as file:
+    # for MAX_EPISODE in MAX_EPISODE_list:
+    #     for start_update in start_update_list:
+    #         for gamma in gamma_list:
+    #             for update_every in update_every_list:
+    #                 for batch_size in batch_size_list:
+    #                     for lr in lr_list:
+    #                         for MAX_STEP in MAX_STEP_list:
+
+    plt.savefig(filename)
+    # plt.show()
+
+    with open('res/reward_rewardv3.csv', 'a', newline='') as file:
         mywriter = csv.writer(file, delimiter=',')  # 移到循环外部
+        mywriter.writerow(filename)
         mywriter.writerow(all_rewardList)
 
-
-    with open('res/res_err_rewardv3.csv', 'w', newline='') as file:
+    with open('res/err_rewardv3.csv', 'a', newline='') as file:
         mywriter = csv.writer(file, delimiter=',')  # 移到循环外部
+        mywriter.writerow(filename)
         mywriter.writerow(all_err_list)
 
-
-    with open('res/obj_err_rewardv3.csv', 'w', newline='') as file:
+    with open('res/obj_err_rewardv3.csv', 'a', newline='') as file:
         mywriter = csv.writer(file, delimiter=',')  # 移到循环外部
+        mywriter.writerow(filename)
         mywriter.writerow(all_obj_err_list)
 
-    with open('res/res_step_rewardv3.csv', 'w', newline='') as file:
+    with open('res/step_rewardv3.csv', 'a', newline='') as file:
         mywriter = csv.writer(file, delimiter=',')  # 移到循环外部
+        mywriter.writerow(filename)
         mywriter.writerow(all_stop_step_list)
+
+
+if __name__ == '__main__':
+    # MAX_EPISODE_list = [5,6]  # 这里指的是第几个样本
+    # MAX_STEP_list = [200]
+    # update_every_list = [20]  # 100
+    # batch_size_list = [20]
+    # start_update_list = [2]  # 10
+    # lr_list = [1e-6,1e-5]
+    # gamma_list = [0.99]
+
+    MAX_EPISODE_list = [150]  # 这里指的是第几个样本
+    MAX_STEP_list = [10000,15000,20000]
+    update_every_list = [200, 100] # 100
+    batch_size_list = [25,50]
+    start_update_list = [40] # 10
+    lr_list = [1e-6,1e-5]
+    gamma_list = [0.99]
+
+    for MAX_EPISODE in MAX_EPISODE_list:
+        for start_update in start_update_list:
+            for gamma in gamma_list:
+                for update_every in update_every_list:
+                    for batch_size in batch_size_list:
+                        for lr in lr_list:
+                            for MAX_STEP in MAX_STEP_list:
+                                main(MAX_EPISODE=MAX_EPISODE,MAX_STEP=MAX_STEP,update_every=update_every,batch_size=batch_size,
+                                     start_update=start_update,replay_size=int(1e5), gamma=gamma, pi_lr=lr,q_lr=lr,policy_delay=2)
