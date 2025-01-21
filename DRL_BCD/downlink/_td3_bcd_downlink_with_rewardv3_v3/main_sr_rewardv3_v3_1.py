@@ -3,6 +3,8 @@
 # with all features, including previous features (G,v,w...) and new features in rewardv3_v2
 # for many instances with each as one eipisode
 
+# sr_reward_v3 for single-instances on sr_iterations.
+
 from td3_sr_rewardv3_v3 import TD3
 import matplotlib.pyplot as plt
 import numpy as np
