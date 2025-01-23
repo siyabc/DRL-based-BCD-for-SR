@@ -40,7 +40,7 @@ class ReplayBuffer:
 
 class TD3:
     def __init__(self, obs_dim, act_dim, actor_critic=core_sr.MLPActorCritic,
-                 replay_size=int(1e6), gamma=0.99, polyak=0.995, pi_lr=1e-6, q_lr=1e-6,
+                 replay_size=int(1e6), gamma=0.99, polyak=0.995, pi_lr=1e-3, q_lr=1e-3,
                  act_noise=0.05, target_noise=0.05, noise_clip=0.5, policy_delay=2):
         self.obs_dim = obs_dim
         self.act_dim = act_dim
