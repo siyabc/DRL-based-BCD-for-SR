@@ -3,7 +3,7 @@ import itertools
 import numpy as np
 import torch
 from torch.optim import Adam
-import core_sr_v2 as core_sr
+import core_sr_v3 as core_sr
 
 
 class ReplayBuffer:
@@ -39,9 +39,9 @@ class ReplayBuffer:
 
 
 class TD3:
-    def __init__(self, obs_dim, act_dim, actor_critic=core_sr.MLPActorCritic,
-                 replay_size=int(1e6), gamma=0.99, polyak=0.995, pi_lr=1e-3, q_lr=1e-3,
-                 act_noise=0.05, target_noise=0.05, noise_clip=0.5, policy_delay=2):
+    def __init__(self, obs_dim, act_dim,nn_dim, actor_critic=core_sr.MLPActorCritic,
+                 replay_size=int(1e6), gamma=0.9, polyak=0.995, pi_lr=1e-3, q_lr=1e-3,
+                 act_noise=0.05, target_noise=0.05, noise_clip=0.5, policy_delay=2,hidden_sizes=(256,256)):
         self.obs_dim = obs_dim
         self.act_dim = act_dim
         self.gamma = gamma
@@ -52,7 +52,7 @@ class TD3:
         self.policy_delay = policy_delay
         self.replay_buffer = ReplayBuffer(obs_dim=obs_dim, act_dim=act_dim,size=replay_size)
 
-        self.ac = actor_critic(obs_dim, act_dim)
+        self.ac = actor_critic(nn_dim, act_dim, hidden_sizes=hidden_sizes)
         self.ac_targ = deepcopy(self.ac)
 
         for p in self.ac_targ.parameters():
@@ -70,7 +70,8 @@ class TD3:
 
     def compute_loss_q(self,data):
         o, a, r, o2, d = data['obs'], data['act'], data['rew'], data['obs2'], data['done']
-
+        o = o[:,16:]
+        o2 = o2[:,16:]
         q1 = self.ac.q1(o,a)
         q2 = self.ac.q2(o,a)
 
@@ -88,6 +89,12 @@ class TD3:
             q1_pi_targ = self.ac_targ.q1(o2, a2)
             q2_pi_targ = self.ac_targ.q2(o2, a2)
             q_pi_targ = torch.min(q1_pi_targ, q2_pi_targ)
+            # print("--d:",d)
+            # print("==q1:",q1_pi_targ)
+            # print("==q2:",q2_pi_targ)
+
+            # print("==q:", q_pi_targ)
+
             backup = r + self.gamma * (1 - d) * q_pi_targ
 
         # MSE loss against Bellman backup
@@ -99,7 +106,11 @@ class TD3:
 
     def compute_loss_pi(self, data):
         o = data['obs']
+        o = o[:,16:]    # o_for_act
+        a = self.ac.pi(o)
         q1_pi = self.ac.q1(o, self.ac.pi(o))
+        # print("==a_pi:", a.reshape(30))
+        # print("q1_pi:", q1_pi)
         return -q1_pi.mean()
 
     def update(self, batch_size, repeat_times):
@@ -122,6 +133,8 @@ class TD3:
                 # Next run one gradient descent step for pi.
                 self.pi_optimizer.zero_grad()
                 loss_pi = self.compute_loss_pi(data)
+                # print("loss_pi:", loss_pi)
+
                 loss_pi.backward()
                 self.pi_optimizer.step()
 
@@ -137,8 +150,8 @@ class TD3:
                         p_targ.data.mul_(self.polyak)
                         p_targ.data.add_((1 - self.polyak) * p.data)
 
-    def get_action(self, o, noise_scale):
-        a = self.ac.act(torch.as_tensor(o, dtype=torch.float32))
+    def get_action(self, o_for_act, noise_scale):
+        a = self.ac.act(torch.as_tensor(o_for_act, dtype=torch.float32))
         # print("a1:", a)
         a += noise_scale * np.random.rand(self.act_dim)
         # print("a2:", a)

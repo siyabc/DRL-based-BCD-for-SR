@@ -5,7 +5,6 @@ import torch
 import torch.nn as nn
 
 
-
 def combined_shape(length, shape=None):
     if shape is None:
         return (length,)
@@ -44,7 +43,7 @@ class MLPQFunction(nn.Module):
 
 class MLPActorCritic(nn.Module):
 
-    def __init__(self, obs_dim, act_dim, hidden_sizes=(128,128),
+    def __init__(self, obs_dim, act_dim, hidden_sizes=(256,256),
                  activation=nn.ReLU):
         super().__init__()
 

@@ -1,8 +1,8 @@
 # 对于多个样例来训练
-# o是所有特征
+# 原始版本加上obj err
 # a 是 p
 
-from td3_sr_v2 import TD3
+from td3_sr_v3 import TD3
 import matplotlib.pyplot as plt
 import numpy as np
 import csv
@@ -47,13 +47,20 @@ def step(o, a, label):
     p = p/np.sum(p)*p_bar
 
 
+
     Fpv = F.dot(p) + v
     gamma = p / Fpv
 
     obj_updated = w.T.dot(np.log(1 + gamma))[0]
     obj_star = w.T.dot(np.log(1 + gamma_star))[0]
-    reward = - (np.abs(obj_updated-obj_star))**2
-    # reward = - np.linalg.norm(gamma - gamma_star, 1)
+    reward = (np.abs(obj_updated-obj_star))**1
+    # reward = np.linalg.norm(gamma - gamma_star, 1)
+    # reward = obj_updated
+
+    old_gamma = o[-3:]
+    obj_old = w.T.dot(np.log(1 + old_gamma))[0]
+
+    delta_reward = np.abs(obj_updated - obj_old)
 
 
     obj_err = abs(np.abs(obj_updated - obj_star)) / obj_star
@@ -63,8 +70,9 @@ def step(o, a, label):
 
     # o2 = np.append(o[:-3], gamma)
     d = False
-    if reward >= -1e-3:
+    if abs(delta_reward) <= 1e-3:
         d = True
+    d = False
     return o2, reward, d, obj_err[0]
 
 
@@ -110,15 +118,16 @@ if __name__ == '__main__':
             sr_target.append(list(map(float, line[-3:])))
 
     obs_dim = 25
+    nn_dim = 9
     act_dim = 3
-    td3 = TD3(obs_dim, act_dim)
+    td3 = TD3(obs_dim, act_dim, nn_dim)
 
     # MAX_EPISODE = len(sr_data)
     MAX_EPISODE = 100  # 这里指的是第几个样本
-    MAX_STEP = 10000
+    MAX_STEP = 5000
     update_every = 100  # 100
-    batch_size = 20
-    start_update = 5  # 10
+    batch_size = 10
+    start_update = 1  # 10
 
 
     all_rewardList = []
@@ -154,10 +163,10 @@ if __name__ == '__main__':
                 # else:
                 #     a = env.action_space.sample()
                 # a = td3.get_action(o, td3.act_noise) * 2
-                a = td3.get_action(o, 0.001)
+                a = td3.get_action(o[16:], 0.001)
 
                 # print("==a:", a)
-                if j%3000 ==1:
+                if j%2000 ==1:
                     # print("===o:",o)
                     print("==a:", a)
                 #     continue
@@ -170,7 +179,7 @@ if __name__ == '__main__':
                     print("obj_err:",obj_err)
 
                 # ======================
-
+                # print("--r:", r)
                 td3.replay_buffer.store(o, a, r, o2, d)
 
                 if episode >= start_update and j % update_every == 0:

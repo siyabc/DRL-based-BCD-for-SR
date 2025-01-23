@@ -5,7 +5,6 @@ import torch
 import torch.nn as nn
 
 
-
 def combined_shape(length, shape=None):
     if shape is None:
         return (length,)
@@ -26,7 +25,7 @@ class MLPActor(nn.Module):
     def __init__(self, obs_dim, act_dim, hidden_sizes, activation):
         super().__init__()
         pi_sizes = [obs_dim] + list(hidden_sizes) + [act_dim]
-        self.pi = mlp(pi_sizes, activation, nn.ReLU)
+        self.pi = mlp(pi_sizes, activation, output_activation=nn.Sigmoid )
 
     def forward(self, obs):
         # Return output from network scaled to action space limits.
@@ -36,7 +35,7 @@ class MLPQFunction(nn.Module):
 
     def __init__(self, obs_dim, act_dim, hidden_sizes, activation):
         super().__init__()
-        self.q = mlp([obs_dim + act_dim] + list(hidden_sizes) + [1], activation)
+        self.q = mlp([obs_dim + act_dim] + list(hidden_sizes) + [1], activation, output_activation=nn.Identity)
 
     def forward(self, obs, act):
         q = self.q(torch.cat([obs, act], dim=-1))
@@ -44,7 +43,7 @@ class MLPQFunction(nn.Module):
 
 class MLPActorCritic(nn.Module):
 
-    def __init__(self, obs_dim, act_dim, hidden_sizes=(128,128),
+    def __init__(self, obs_dim, act_dim, hidden_sizes=(256,256),
                  activation=nn.ReLU):
         super().__init__()
 
