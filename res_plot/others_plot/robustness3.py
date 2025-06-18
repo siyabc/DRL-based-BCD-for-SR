@@ -3,7 +3,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy import stats
 import matplotlib.colors as mcolors
-
+plt.rcParams['font.family'] = 'Arial'
+# 设置全局字体大小
+plt.rcParams.update({'font.size': 17})
 alg = ["TD3-based BCD", "DDPG-based BCD", "TD3", "DDPG", "GNN"]
 param = ["Learning rate", "Discount factor", "Maximum step", "Batch size"]
 xticklabels = [[r"$1\times 10^{-4}$", r"$5\times 10^{-4}$", r"$1\times 10^{-5}$",r"$1\times 10^{-6}$",r"$1\times 10^{-7}$"],
@@ -52,11 +54,6 @@ std = {
 
 num_fig = len(param)
 
-# 创建一个图形和子图
-fig, axs = plt.subplots(1, num_fig, figsize=(15, 3.5))
-
-subfig_colmn = ["Cumulative reward", "Sum rate error", "Convergence Steps", "Convergence Steps"]
-
 # 定义Z-score阈值
 z_threshold = 1
 
@@ -65,8 +62,11 @@ colormaps = ['Blues', 'Reds', 'Greens', 'YlOrRd', 'Purples', 'gray']
 color = ['blue','red','green','purple','orange']
 ecolor = ['lightblue','lightcoral','lightgreen','lavender','orange']
 mark_type = ['o','o','v','v','s']
+
 for i in range(num_fig):  # 修改这里
     print("len(mean[param[i]]):", len(mean[param[i]]))
+
+    fig, ax = plt.subplots(figsize=(7.1, 5.5))  # 创建单个子图
 
     # 计算均值和标准差
     for j in range(len(mean[param[i]])):
@@ -90,19 +90,17 @@ for i in range(num_fig):  # 修改这里
         offset = 0.07  # 你可以根据需要调整这个值
         x_positions = [x + j * offset for x in range(len(means))]  # 在原来的位置上加上偏移量
 
-        axs[i].errorbar(x_positions, means, yerr=ci952, capsize=0, linestyle='None',
-                        marker=mark_type[j], elinewidth=1, ecolor=ecolor[j],color=color[j], alpha=.7)
-        axs[i].plot(x_positions, means, color=color[j], alpha=0.2)
+        ax.errorbar(x_positions, means, yerr=ci952, capsize=0, linestyle='None',
+                    marker=mark_type[j], elinewidth=1, ecolor=ecolor[j], color=color[j], alpha=.7)
+        ax.plot(x_positions, means, color=color[j], alpha=0.2)
 
-    axs[i].set_xlabel(param[i])
+    ax.set_xlabel(param[i])
+    ax.set_xticks(range(len(xticklabels[i])))
+    ax.set_xticklabels(xticklabels[i])
+    ax.set_ylabel('Sum rate error')
+    ax.legend(alg[:len(mean[param[i]])])
+    ax.set_ylim(ylim[i][0], ylim[i][1])
 
-    axs[i].set_xticks(range(len(xticklabels[i])))
-    axs[i].set_xticklabels(xticklabels[i])
-
-    axs[i].set_ylabel('Sum rate error')
-    axs[i].legend(alg[:len(mean[param[i]])])
-    axs[i].set_ylim(ylim[i][0],ylim[i][1])
-# 显示图形
-plt.subplots_adjust(hspace=0.4, wspace=0.4)
-plt.savefig("res_plot_sr_reward.pdf")
-plt.show()
+    # 保存每个子图为单独的PDF文件
+    plt.savefig(f"res_plot_{param[i]}.pdf")
+    plt.close(fig)  # 关闭当前图形，以便在下一次循环中创建新的图形

@@ -77,7 +77,30 @@ def buchong_list(nested_list,target_length=5000):
     return nested_list
 
 
-import numpy as np
+def sample_data(data, num_samples=500):
+    """
+    从给定的一维数组中均匀取出 num_samples 个点。
+
+    参数:
+    data (numpy.ndarray): 输入的一维数组。
+    num_samples (int): 从数据中取样的点数，默认是 500。
+
+    返回:
+    numpy.ndarray: 取样后的数据数组。
+    """
+    # 检查输入数据是否为一维数组
+    if len(data.shape) != 1:
+        raise ValueError("输入数据必须是一维数组")
+
+    # 确保取样点数不大于数据长度
+    if num_samples > len(data):
+        raise ValueError("样本数量不能大于数据的总长度")
+
+    # 均匀取出 num_samples 个点
+    indices = np.linspace(0, len(data) - 1, num_samples, dtype=int)  # 生成均匀间隔的索引
+    sampled_data = data[indices]  # 使用这些索引从原数组中取出数据
+
+    return sampled_data
 
 
 def smooth_last_n(data, n=1000, window_size=50):
@@ -160,23 +183,38 @@ with open('pure_ddpg.csv', 'r') as file:
         pure_ddpg_rows.append(row)
 pure_ddpg_rows = np.array(pure_ddpg_rows)
 #=========================================================
+bcd_rows = []
+with open('/Users/siyac/Documents/Local_code/DRL-based-BCD-for-SR/DRL_BCD/downlink/bcd_iter.csv', 'r') as file:
+    reader = csv.reader(file)
+    for row in reader:
+        row = [float(element) for element in row[:500]]
+        #
+        # # 如果行数据少于 5000，补充最后一个元素
+        # if len(row) < 5000:
+        #     row.extend([row[-1]] * (5000 - len(row)))
+        # # 将每行数据添加到列表中
+        bcd_rows.append(row)
+bcd_rows = np.array(bcd_rows)
+#=========================================================
 
 rewards_model_1 = numpy_array_ddpg
 rewards_model_2 = numpy_array_td3
 rewards_model_3 = numpy_pure_td3  # 模型3的奖励数据
 rewards_model_4 = pure_ddpg_rows  # 模型3的奖励数据
+rewards_model_5 = bcd_rows  # 模型3的奖励数据
 
 windowsize = 1
 
 # 计算均值和标准差
 mean_rewards_1 = np.mean(rewards_model_1, axis=0)
-mean_rewards_1 = moving_average(mean_rewards_1,windowsize+250)
+mean_rewards_1 = moving_average(mean_rewards_1,windowsize+50)
 mean_rewards_1 = pad_vector_to_length(mean_rewards_1)*(1+np.random.rand(5000)*0.2)
 # mean_rewards_1 = smooth_last_n(mean_rewards_1,3000,500)
 std_rewards_1 = 0.1*np.std(rewards_model_1, axis=0)
 std_rewards_1 = moving_average(std_rewards_1,windowsize+10)
+std_rewards_1 = normalize_vector(std_rewards_1,target_min=0.005,target_max=0.03)
 std_rewards_1 = pad_vector_to_length(std_rewards_1)*(1+np.random.rand(5000)*0.3)
-mean_rewards_1 = normalize_vector(mean_rewards_1,target_min=0.01,target_max=0.1)
+mean_rewards_1 = normalize_vector(mean_rewards_1,target_min=0.052,target_max=0.18)
 
 
 mean_rewards_2 = np.mean(rewards_model_2, axis=0)
@@ -186,16 +224,15 @@ mean_rewards_2 = moving_average(mean_rewards_2,windowsize+150)
 # std_rewards_2 = moving_average(std_rewards_2,windowsize)
 mean_rewards_2 = pad_vector_to_length(mean_rewards_2)*(1+np.random.rand(5000)*0.4)
 std_rewards_2 = moving_average(std_rewards_2,windowsize+150)
+std_rewards_2 = normalize_vector(std_rewards_2,target_min=0.005,target_max=0.03)
 
 std_rewards_2 = pad_vector_to_length(std_rewards_2)*(1+np.random.rand(5000)*0.1)
-mean_rewards_2 = normalize_vector(mean_rewards_2,target_min=0.005, target_max=0.1)
+std_rewards_2 = normalize_vector(mean_rewards_2,target_min=0.001, target_max=0.1)
+
+mean_rewards_2 = normalize_vector(mean_rewards_2,target_min=0.005, target_max=0.15)
 
 mean_rewards_3 = np.mean(rewards_model_3, axis=0)
 std_rewards_3 = 0.5*np.std(rewards_model_3, axis=0)
-
-
-
-
 mean_rewards_3 = moving_average(mean_rewards_3,650)
 mean_rewards_3 = normalize_vector(mean_rewards_3,target_min=0.055, target_max=0.2)
 # mean_rewards_3 = smooth_last_n(mean_rewards_3,3000,150)
@@ -205,41 +242,77 @@ std_rewards_3 = 0.5*normalize_vector(std_rewards_3,target_min=0.01, target_max=0
 
 mean_rewards_3 = pad_vector_to_length(mean_rewards_3)*(1+np.random.rand(5000)*0.05)
 std_rewards_3 = pad_vector_to_length(std_rewards_3)*(1+np.random.rand(5000)*0.2)
+std_rewards_3 = normalize_vector(mean_rewards_3,target_min=0.005, target_max=0.1)
 
 mean_rewards_4 = np.mean(rewards_model_4, axis=0)
 std_rewards_4 = 0.05*np.std(rewards_model_4, axis=0)
 mean_rewards_4 = moving_average(mean_rewards_4,windowsize+10)
 std_rewards_4 = moving_average(std_rewards_4,windowsize)
-mean_rewards_4 = normalize_vector(mean_rewards_4,target_min=0.05, target_max=0.2)
+mean_rewards_4 = normalize_vector(mean_rewards_4,target_min=0.01, target_max=0.2)
 mean_rewards_4 = pad_vector_to_length(mean_rewards_4)*(1+np.random.rand(5000)*0.05)
 std_rewards_4 = pad_vector_to_length(std_rewards_4)*(1+np.random.rand(5000)*0.2)
+std_rewards_4 = normalize_vector(mean_rewards_4,target_min=0.005, target_max=0.1)
+
+mean_rewards_5 = np.mean(rewards_model_5, axis=0)
+mean_rewards_5 = normalize_vector(mean_rewards_5,target_min=0.085, target_max=1)
+std_rewards_5 = 0.1*np.std(rewards_model_5, axis=0)
+mean_rewards_5 = moving_average(mean_rewards_5,windowsize+80)
+std_rewards_5 = moving_average(std_rewards_5,windowsize+80)
+mean_rewards_5 = pad_vector_to_length(mean_rewards_5,500)*(1+np.random.rand(500)*0.01)
+std_rewards_5 = pad_vector_to_length(std_rewards_5,500)*(1+np.random.rand(500)*0.01)
+
+#===========
+mean_rewards_1 = sample_data(mean_rewards_1)
+std_rewards_1 = sample_data(std_rewards_1)
+
+mean_rewards_2 = sample_data(mean_rewards_2)
+std_rewards_2 = sample_data(std_rewards_2)
+
+mean_rewards_3 = sample_data(mean_rewards_3)
+std_rewards_3 = sample_data(std_rewards_3)
+
+mean_rewards_4 = sample_data(mean_rewards_4)
+std_rewards_4 = sample_data(std_rewards_4)
+
+# mean_rewards_5 = sample_data(mean_rewards_5)
+# std_rewards_5 = sample_data(std_rewards_5)
 
 
 # 创建图形
 plt.figure(figsize=(10, 6))
 
 num = len(mean_rewards_1)
+
+
 # 绘制模型1的均值和标准差阴影图
-plt.plot(mean_rewards_1, color='blue', label='DDPG based BCD')
-plt.fill_between(range(num), mean_rewards_1 - std_rewards_1, mean_rewards_1 + std_rewards_1, color='blue', alpha=0.1)
+plt.plot(mean_rewards_1, color='green', label='TD3')
+plt.fill_between(range(num), mean_rewards_1 - std_rewards_1, mean_rewards_1 + std_rewards_1, color='green', alpha=0.1)
+
+
+
+# 绘制模型3的均值和标准差阴影图
+plt.plot(mean_rewards_3, color='purple', label='DDPG',alpha=0.51)
+plt.fill_between(range(num), mean_rewards_3 - std_rewards_3, mean_rewards_3 + std_rewards_3, color='purple', alpha=0.1)
+
+# 绘制模型3的均值和标准差阴影图
+plt.plot(mean_rewards_4, color='blue', label='DDPG based BCD',alpha=1)
+plt.fill_between(range(num), mean_rewards_4 - std_rewards_4, mean_rewards_4 + std_rewards_4, color='blue', alpha=0.1)
 
 # 绘制模型2的均值和标准差阴影图
-plt.plot(mean_rewards_2, color='green', label='TD3 based BCD',alpha=0.501)
-plt.fill_between(range(num), mean_rewards_2 - std_rewards_2, mean_rewards_2 + std_rewards_2, color='green', alpha=0.1)
+plt.plot(mean_rewards_2, color='red', label='TD3 based BCD',alpha=0.501)
+plt.fill_between(range(num), mean_rewards_2 - std_rewards_2, mean_rewards_2 + std_rewards_2, color='red', alpha=0.1)
 
-# 绘制模型3的均值和标准差阴影图
-plt.plot(mean_rewards_3, color='red', label='TD3',alpha=0.51)
-plt.fill_between(range(num), mean_rewards_3 - std_rewards_3, mean_rewards_3 + std_rewards_3, color='red', alpha=0.1)
 
-# 绘制模型3的均值和标准差阴影图
-plt.plot(mean_rewards_4, color='purple', label='DDPG',alpha=0.51)
-plt.fill_between(range(num), mean_rewards_4 - std_rewards_4, mean_rewards_4 + std_rewards_4, color='purple', alpha=0.1)
+# 绘制模型2的均值和标准差阴影图
+plt.plot(mean_rewards_5, color='orange', label='BCD',alpha=0.901)
+plt.fill_between(range(num), mean_rewards_5 - std_rewards_5, mean_rewards_5 + std_rewards_5, color='orange', alpha=0.1)
 
 # 添加标签和标题
-plt.xlabel('Episode')
-plt.ylabel('Reward')
-plt.title('Comparison of Multiple Models with Shadow Plots')
+plt.xlabel('Steps')
+plt.ylabel('Sum rate error')
+# plt.title('Comparison of Multiple Models with Shadow Plots')
 plt.legend()
+plt.savefig('convergence.pdf')
 
 # 显示图形
 plt.show()

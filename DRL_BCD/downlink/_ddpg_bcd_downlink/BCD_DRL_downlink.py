@@ -253,7 +253,7 @@ def traning():
     frame_idx = 0
     # rewards = []
     replay_size = 0
-    start_update = 20
+    start_update = 25
 
     rewardList = []
     err_list = []
@@ -333,17 +333,17 @@ def traning():
     plt.show()
     # plot(frame_idx, rewards)
 
-    with open('res_reward_ddpg.csv', 'w', newline='') as file:
+    with open('res_reward_ddpg_25.csv', 'w', newline='') as file:
         for i in range(max_frames):
             mywriter = csv.writer(file, delimiter=',')
             a = np.array([rewardList[i]])
             mywriter.writerow(a)
-    with open('res_err_ddpg.csv', 'w', newline='') as file:
+    with open('res_err_ddpg_25.csv', 'w', newline='') as file:
         for i in range(max_frames):
             mywriter = csv.writer(file, delimiter=',')
             a = np.array([err_list[i]])
             mywriter.writerow(a)
-    with open('res_step_ddpg.csv', 'w', newline='') as file:
+    with open('res_step_ddpg_25.csv', 'w', newline='') as file:
         for i in range(max_frames):
             mywriter = csv.writer(file, delimiter=',')
             a = np.array([stop_step_list[i]])

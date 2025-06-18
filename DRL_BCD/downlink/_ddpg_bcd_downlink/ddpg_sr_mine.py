@@ -191,6 +191,7 @@ def sr_step(o, a, label):
     obj_updated = w.T.dot(np.log(1 + gamma))[0]
     obj_star = w.T.dot(np.log(1 + gamma_star))[0]
     reward = - (np.abs(obj_updated-obj_star))**2
+    obj_err = abs(np.abs(obj_updated - obj_star)) / obj_star
     # reward = - np.linalg.norm(gamma - gamma_star, 1)
     # print("a:", a)
     # print("gamma:", gamma)
@@ -200,7 +201,7 @@ def sr_step(o, a, label):
     d = False
     if reward >= -1e-3:
         d = True
-    return o2, reward, d
+    return o2, reward, d,obj_err
 
 
 
@@ -258,19 +259,19 @@ def main():
 
     ddpg = DDPG(action_dim, state_dim, hidden_dim)
 
-    max_frames = 150
+    max_frames = 200
     #2500,3500,4500,5500
     max_steps = 5000
     frame_idx = 0
     # rewards = []
     replay_size = 0
-    start_update = 20
+    start_update = 25
 
     rewardList = []
     err_list = []
     stop_step_list = []
     outlier_list = []
-
+    all_obj_err_list = []
     while frame_idx < max_frames:
         print("frame_idx:", frame_idx)
 
@@ -283,12 +284,15 @@ def main():
         # ou_noise.reset()
         episode_reward = 0
 
+        obj_err_list = []
+
+
         for step in range(max_steps):
             # env.render()
             action = ddpg.policy_net.get_action(state)
             # action = ou_noise.get_action(action, step)
             # next_state, reward, done, _ = env.step(action)
-            next_state, reward, done = sr_step(state, action, label)
+            next_state, reward, done, obj_err = sr_step(state, action, label)
             # print("action:", len(action))
             ddpg.replay_buffer.push(state, action, reward, next_state, done)
 
@@ -299,6 +303,7 @@ def main():
 
             state = next_state
             episode_reward += reward
+            obj_err_list.append(obj_err)
 
 
             # if frame_idx % max(1000, max_steps + 1) == 0:
@@ -309,8 +314,13 @@ def main():
 
         gamma = state[-3:]
         err = np.linalg.norm(gamma - label)
-        print('Episode:', frame_idx, 'gamma:', gamma, 'label:', label, '==========', 'Reward:', episode_reward, 'err:', err,
+        print('Episode:', frame_idx, 'gamma:', gamma, 'label:', label, '==========', 'Reward:', episode_reward, 'err:', err, 'obj_err:',obj_err,
               'j:', step)
+
+        if frame_idx>start_update:
+            with open('res/instance.csv', 'a', newline='') as file:
+                mywriter = csv.writer(file, delimiter=',')  # 移到循环外部
+                mywriter.writerow(obj_err_list)
 
 
         frame_idx += 1
@@ -318,6 +328,7 @@ def main():
 
         rewardList.append(episode_reward)
         err_list.append(err)
+        all_obj_err_list.append(obj_err)
         stop_step_list.append(step)
         if frame_idx > 50 and step >= 1000:
             outlier_list.append(frame_idx)
@@ -330,44 +341,47 @@ def main():
 
     print("outlier_list:", outlier_list)
 
-    plt.figure(figsize=(18, 5))
-
-    plt.subplot(1, 3, 1)
+    plt.figure(figsize=(18, 4))
+    plt.subplot(1, 4, 1)
     plt.plot(np.arange(len(rewardList)), rewardList)
     plt.xlabel("Episode", fontsize=10)
-    plt.ylabel("ddpg_Reward", fontsize=10)
+    plt.ylabel("Reward", fontsize=10)
 
-    plt.subplot(1, 3, 2)
+    plt.subplot(1, 4, 2)
     plt.plot(np.arange(len(err_list)), err_list)
     plt.xlabel("Episode", fontsize=10)
     plt.ylabel("SINR error", fontsize=10)
 
-    plt.subplot(1, 3, 3)
+    plt.subplot(1, 4, 3)
+    plt.plot(np.arange(len(all_obj_err_list)), all_obj_err_list)
+    plt.xlabel("Episode", fontsize=10)
+    plt.ylabel("Sum rate error", fontsize=10)
+
+    plt.subplot(1, 4, 4)
     plt.plot(np.arange(len(stop_step_list)), stop_step_list)
     plt.xlabel("Episode", fontsize=10)
     plt.ylabel("Iteration steps", fontsize=10)
 
+    plt.title("td3_v2")
+
     plt.savefig("res_v1.pdf")
     plt.show()
-    # plot(frame_idx, rewards)
 
-    with open('res_reward_ddpg.csv', 'w', newline='') as file:
-        for i in range(max_frames):
-            mywriter = csv.writer(file, delimiter=',')
-            a = np.array([rewardList[i]])
-            mywriter.writerow(a)
-    with open('res_err_ddpg.csv', 'w', newline='') as file:
-        for i in range(max_frames):
-            mywriter = csv.writer(file, delimiter=',')
-            a = np.array([err_list[i]])
-            mywriter.writerow(a)
-    with open('res_step_ddpg.csv', 'w', newline='') as file:
-        for i in range(max_frames):
-            mywriter = csv.writer(file, delimiter=',')
-            a = np.array([stop_step_list[i]])
-            mywriter.writerow(a)
+    with open('res/res_reward_25.csv', 'a', newline='') as file:
+        mywriter = csv.writer(file, delimiter=',')  # 移到循环外部
+        mywriter.writerow(rewardList)
 
+    with open('res/res_err_25.csv', 'a', newline='') as file:
+        mywriter = csv.writer(file, delimiter=',')  # 移到循环外部
+        mywriter.writerow(err_list)
 
+    with open('res/obj_err_25.csv', 'a', newline='') as file:
+        mywriter = csv.writer(file, delimiter=',')  # 移到循环外部
+        mywriter.writerow(all_obj_err_list)
+
+    with open('res/res_step_25.csv', 'a', newline='') as file:
+        mywriter = csv.writer(file, delimiter=',')  # 移到循环外部
+        mywriter.writerow(stop_step_list)
 
 if __name__ == '__main__':
     main()

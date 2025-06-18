@@ -44,7 +44,7 @@ def step(o, a, label):
     B = F+1/p_bar*np.dot(v,np.ones((1, 3)))
 
     p=a.reshape(3,1)
-    p = p/np.sum(p)*p_bar
+    # p = p/np.sum(p)*p_bar
 
 
 
@@ -53,7 +53,7 @@ def step(o, a, label):
 
     obj_updated = w.T.dot(np.log(1 + gamma))[0]
     obj_star = w.T.dot(np.log(1 + gamma_star))[0]
-    reward = (np.abs(obj_updated-obj_star))**1
+    reward = -(np.abs(obj_updated-obj_star))**2
     # reward = np.linalg.norm(gamma - gamma_star, 1)
     # reward = obj_updated
 
@@ -81,7 +81,7 @@ def iteration_3u_v2(B, b):
     z0 = z[0]
     z1 = z[1]
     z2 = z[2]
-    tol = 10e-9
+    tol = 10e-5
     err = 1
     # print("B:", np.reshape(B, (1,9)))
 
@@ -124,10 +124,10 @@ if __name__ == '__main__':
 
     # MAX_EPISODE = len(sr_data)
     MAX_EPISODE = 100  # 这里指的是第几个样本
-    MAX_STEP = 5000
-    update_every = 100  # 100
+    MAX_STEP = 8000
+    update_every = 300  # 100
     batch_size = 10
-    start_update = 1  # 10
+    start_update = 5  # 10
 
 
     all_rewardList = []
@@ -167,6 +167,7 @@ if __name__ == '__main__':
 
                 # print("==a:", a)
                 if j%2000 ==1:
+                # if j < 3:
                     # print("===o:",o)
                     print("==a:", a)
                 #     continue
@@ -194,8 +195,8 @@ if __name__ == '__main__':
                 obj_err_iter_list.append(obj_err)
             gamma = o[-3:]
             err = np.linalg.norm(gamma-label)
-            print('------Episode:', episode, 'gamma:', gamma, 'label:', label, '==========', 'Reward:', ep_reward, 'err:',
-                  err, '---', 'obj_err:', obj_err, 'j:', min(j_converge_list))
+            print('---Episode:', episode, 'gamma:', gamma, 'label:', label, '==', 'r:', ep_reward, 'err:',
+                  err, '--', 'obj_err:', obj_err, 'j:', min(j_converge_list))
             # print('Episode:', episode, '====Reward:',ep_reward, '****err:', err, 'j:', stop_step)
 
             # print('gamma:', o)

@@ -24,11 +24,6 @@ def step(o, a, label):
     obj_updated = w.T.dot(np.log(1 + gamma))[0]
     obj_star = w.T.dot(np.log(1 + gamma_star))[0]
     reward = - (np.abs(obj_updated-obj_star))**2
-    # reward = - np.linalg.norm(gamma - gamma_star, 1)
-    # print("a:", a)
-    # print("gamma:", gamma)
-    # print("gamma_star:", gamma_star)
-    # print("reward:", reward)
     o2 = np.append(o[:-3], gamma)
     d = False
     if reward >= -1e-3:
@@ -57,12 +52,7 @@ def iteration_for_subproblem_v0(B, b):
 
         err = abs(z0_temp - z0)+abs(z1_temp - z1)+abs(z2_temp - z2)
     z = np.array([z0, z1, z2])
-    # print("b:", b)
-    # print("Z:", z0, z1, z2)
     res = B.dot(z)
-    # print(np.log(z[0] / res[0]))
-    # print(np.log(z[1] / res[1]))
-    # print(np.log(z[2] / res[2]))
     til_gamma = np.array([np.log(z[0] / res[0]),np.log(z[1] / res[1]),np.log(z[2] / res[2])])
 
     return til_gamma
@@ -135,6 +125,8 @@ def one_data_check():
     print("step:", step)
     print("label:", label)
     print("gamma:", gamma)
+    print("obj_star:", obj_star)
+
     print("sumrate_acc:", sumrate_acc)
 
 

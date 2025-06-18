@@ -10,9 +10,11 @@ def combined_shape(length, shape=None):
         return (length,)
     return (length, shape) if np.isscalar(shape) else (length, *shape)
 
-def mlp(sizes, activation, output_activation=nn.ReLU):
+def mlp(sizes, activation, output_activation=nn.Sigmoid):
     layers = []
-    for j in range(len(sizes)-1):
+    # for j in range(len(sizes)-1):
+    for j in range(3):
+
         act = activation if j < len(sizes)-2 else output_activation
         layers += [nn.Linear(sizes[j], sizes[j+1]), act()]
     return nn.Sequential(*layers)
@@ -25,7 +27,7 @@ class MLPActor(nn.Module):
     def __init__(self, obs_dim, act_dim, hidden_sizes, activation):
         super().__init__()
         pi_sizes = [obs_dim] + list(hidden_sizes) + [act_dim]
-        self.pi = mlp(pi_sizes, activation, output_activation=nn.Sigmoid )
+        self.pi = mlp(pi_sizes, activation, output_activation=nn.ReLU )
 
     def forward(self, obs):
         # Return output from network scaled to action space limits.
@@ -44,7 +46,7 @@ class MLPQFunction(nn.Module):
 class MLPActorCritic(nn.Module):
 
     def __init__(self, obs_dim, act_dim, hidden_sizes=(256,256),
-                 activation=nn.ReLU):
+                 activation=nn.ELU):
         super().__init__()
 
         # build policy and value functions

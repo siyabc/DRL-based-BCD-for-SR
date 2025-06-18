@@ -193,6 +193,6 @@ axs[i // 2].legend(['TD3-based BCD', 'DDPG-based BCD'])
 
 
 
-plt.savefig("res_plot.pdf")
+plt.savefig("res_plot_sr_reward.pdf")
 
 plt.show()

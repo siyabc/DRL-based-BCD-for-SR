@@ -85,11 +85,11 @@ if __name__ == '__main__':
     td3 = TD3(obs_dim, act_dim)
 
     # MAX_EPISODE = len(sr_data)
-    MAX_EPISODE = 1000 # 这里指的是第几个样本
+    MAX_EPISODE = 100 # 这里指的是第几个样本
     MAX_STEP = 5000
     update_every = 250 # 100
     batch_size = 20
-    start_update = 100 # 10
+    start_update = 20 # 10
 
 
     all_rewardList = []

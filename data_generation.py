@@ -31,7 +31,7 @@ def brutal_search(G,w,p_bar,sigma):
 
 
 if __name__ == '__main__':
-    num = 50000
+    num = 500
     sigma = np.array([[0.05, 0.05, 0.05]]).T
 
     with open('downlink_data2.csv', 'a', newline='') as file:

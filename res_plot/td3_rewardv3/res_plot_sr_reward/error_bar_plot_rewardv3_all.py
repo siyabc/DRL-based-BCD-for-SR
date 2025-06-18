@@ -76,6 +76,6 @@ for i in range(0, num_files, 2):
     axs[i//2].set_ylabel(subfig_colmn[i//2])
     axs[i // 2].legend(['TD3-based BCD', 'DDPG-based BCD'])
 # 显示图形
-plt.savefig("res_plot.pdf")
+plt.savefig("res_plot_sr_reward.pdf")
 
 plt.show()

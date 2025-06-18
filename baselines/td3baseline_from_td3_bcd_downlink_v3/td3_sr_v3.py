@@ -40,8 +40,8 @@ class ReplayBuffer:
 
 class TD3:
     def __init__(self, obs_dim, act_dim,nn_dim, actor_critic=core_sr.MLPActorCritic,
-                 replay_size=int(1e6), gamma=0.9, polyak=0.995, pi_lr=1e-3, q_lr=1e-3,
-                 act_noise=0.05, target_noise=0.05, noise_clip=0.5, policy_delay=2,hidden_sizes=(256,256)):
+                 replay_size=int(1e6), gamma=0.9, polyak=0.995, pi_lr=1e-5, q_lr=1e-5,
+                 act_noise=0.05, target_noise=0.05, noise_clip=0.5, policy_delay=20,hidden_sizes=(64,64)):
         self.obs_dim = obs_dim
         self.act_dim = act_dim
         self.gamma = gamma
@@ -111,6 +111,9 @@ class TD3:
         q1_pi = self.ac.q1(o, self.ac.pi(o))
         # print("==a_pi:", a.reshape(30))
         # print("q1_pi:", q1_pi)
+
+
+
         return -q1_pi.mean()
 
     def update(self, batch_size, repeat_times):
@@ -138,7 +141,21 @@ class TD3:
                 loss_pi.backward()
                 self.pi_optimizer.step()
 
-                # Unfreeze Q-networks so you can optimize it at next DDPG step.
+                for name, param in self.ac.pi.named_parameters():
+                    if name == "pi.2.weight":  # 检查参数名称是否是 'pi.2.weight'
+                        print(f"Parameter Name: {name}")
+                        print(param)
+
+                # for name, param in self.ac.pi.named_parameters():
+                #     if name == "pi.2.weight":  # 检查参数名称是否是 'pi.2.weight'
+                #         print(f"Parameter Name: {name}")
+                #         if param.grad is not None:
+                #             print("Gradient:")
+                #             print(param.grad)  # 打印该参数的梯度
+                #         else:
+                #             print("No gradient for this parameter")
+
+                        # Unfreeze Q-networks so you can optimize it at next DDPG step.
                 for p in self.q_params:
                     p.requires_grad = True
 
@@ -151,6 +168,10 @@ class TD3:
                         p_targ.data.add_((1 - self.polyak) * p.data)
 
     def get_action(self, o_for_act, noise_scale):
+        # for name, param in self.ac.pi.named_parameters():
+        #     if name == "pi.2.weight":  # 检查参数名称是否是 'pi.2.weight'
+        #         print(f"Parameter Name: {name}")
+        #         print(param)
         a = self.ac.act(torch.as_tensor(o_for_act, dtype=torch.float32))
         # print("a1:", a)
         a += noise_scale * np.random.rand(self.act_dim)
