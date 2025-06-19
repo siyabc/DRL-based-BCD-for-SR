@@ -116,7 +116,7 @@ def one_data_check():
     p_bar = o[15]
     gamma_star = label
     # y_init = np.array([0.5,0.5,0.5])
-    y_init = np.random.rand(3) * 10
+    y_init = np.random.rand(3) * 1
     step, gamma = bcd_for_wsrm(G, w, sigma, p_bar, y_init)
     obj_updated = w.T.dot(np.log(1 + gamma))[0]
     obj_star = w.T.dot(np.log(1 + gamma_star))[0]
