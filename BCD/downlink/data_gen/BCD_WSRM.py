@@ -2,7 +2,7 @@ import numpy as np
 import csv
 import random
 import math
-
+from scipy.linalg import inv, norm
 
 np.random.seed(42)
 def step(o, a, label):
@@ -70,10 +70,10 @@ def iteration_for_subproblem(B, b):
     til_gamma = np.log(z/res)
     return til_gamma
 
-def bcd_for_wsrm(G,w, sigma,p_bar,  y_init):
+def bcd_for_wsrm(G,w, sigma, m, p_bar,  y_init):
     F = np.dot(np.linalg.inv(np.diag(np.diag(G))), (G - np.diag(np.diag(G))))
     v = np.dot(np.linalg.inv(np.diag(np.diag(G))), sigma)
-    B = F + 1 / p_bar * np.dot(v, np.ones((1, 3)))
+    B = F + 1 / p_bar * np.outer(v,m)
     y = y_init
     err = 1
     tol = 1e-3
@@ -101,6 +101,9 @@ def bcd_for_wsrm(G,w, sigma,p_bar,  y_init):
     # print("gamma1:", gamma1)
     # print("gamma2:", gamma2)
     # print("gamma3:", gamma3)
+    L = 3
+    p = inv(np.eye(L) - np.diag(gamma) @ F) @ np.diag(gamma) @ v
+    print("p:", p)
     return step, gamma
 
 
@@ -114,13 +117,15 @@ def one_data_check():
     w = o[9:12].reshape(3, 1)
     sigma = o[12:15].reshape(3, 1)
     p_bar = o[15]
+    m = np.array([1,1,1]).reshape(3)
     gamma_star = label
     # y_init = np.array([0.5,0.5,0.5])
     y_init = np.random.rand(3) * 1
-    step, gamma = bcd_for_wsrm(G, w, sigma, p_bar, y_init)
+    step, gamma = bcd_for_wsrm(G, w, sigma, m, p_bar, y_init)
     obj_updated = w.T.dot(np.log(1 + gamma))[0]
     obj_star = w.T.dot(np.log(1 + gamma_star))[0]
     sumrate_acc = obj_updated/obj_star
+    print("p_bar:", p_bar)
     print("y_init:", y_init)
     print("step:", step)
     print("label:", label)

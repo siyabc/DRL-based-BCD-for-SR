@@ -1,5 +1,7 @@
 import numpy as np
 from scipy.linalg import inv, norm
+# np.random.seed(0)
+
 
 def iteration_for_subproblem(B, b):
     z = np.random.rand(len(b))
@@ -45,10 +47,11 @@ def bcd_for_wsrm(G,w, sigma,m, p_bar,  y_init):
     # print("gamma1:", gamma1)
     # print("gamma2:", gamma2)
     # print("gamma3:", gamma3)
-    return step, gamma
+    p = inv(np.eye(L) - np.diag(gamma) @ F) @ np.diag(gamma) @ v
+    return step, p, gamma
 
 
-def wsrm_algorithm(H_list, w, m, n, P_bar, max_iter=100, epsilon=1e-6):
+def wsrm_algorithm(H_list, w, m, n, P_bar, max_iter=1000, epsilon=1e-1):
     """
     完整的WSRM算法实现，使用 iteration_for_subproblem 替代步骤2和7.
 
@@ -72,18 +75,19 @@ def wsrm_algorithm(H_list, w, m, n, P_bar, max_iter=100, epsilon=1e-6):
 
     # 步骤1: 初始化
     p = np.ones(L) * (P_bar / (np.sum(m) * L))  # 初始功率分配
-    U = np.random.randn(N, L) + 1j * np.random.randn(N, L)  # 随机初始化 U
+    U = np.random.randn(N, L) + np.random.randn(N, L)  # 随机初始化 U
     U = U / norm(U, axis=0)  # 归一化列向量
-    V = [np.random.randn(N_l[l], 1) + 1j * np.random.randn(N_l[l], 1) for l in range(L)]
+    V = [np.random.randn(N_l[l], 1) + np.random.randn(N_l[l], 1) for l in range(L)]
     V = [v / norm(v) for v in V]  # 归一化 v_l
     y = np.random.rand(3) * 1
 
     for _ in range(max_iter):
+        print("_:", _)
         # 步骤①: 计算 G 和 F 矩阵
-        G = np.zeros((L, L), dtype=np.complex128)
+        G = np.zeros((L, L))
         for l in range(L):
             for i in range(L):
-                G[l, i] = np.abs(V[l].conj().T @ H_list[l] @ U[:, i:i + 1]) ** 2
+                G[l, i] = np.abs(V[l].T @ H_list[l] @ U[:, i:i + 1]) ** 2
 
         F = np.zeros((L, L))
         for i in range(L):
@@ -91,24 +95,21 @@ def wsrm_algorithm(H_list, w, m, n, P_bar, max_iter=100, epsilon=1e-6):
                 if i != j:
                     F[i, j] = G[i, j] / G[i, i]
 
-        step, gamma = bcd_for_wsrm(G, w, n, P_bar, y)
-        p = inv(np.eye(L) - np.diag(gamma) @ F) @ np.diag(gamma) @ n
+        step, p, gamma = bcd_for_wsrm(G, w, n, m, P_bar, y)
+        print("p:",p)
 
         # 步骤⑤: 更新接收波束成形 V
         for l in range(L):
-            interference = sum(p[j] * H_list[l] @ U[:, j:j + 1] @ U[:, j:j + 1].conj().T @ H_list[l].conj().T
+            interference = sum(p[j] * H_list[l] @ U[:, j:j + 1] @ U[:, j:j + 1].T @ H_list[l].T
                                for j in range(L) if j != l)
-            V[l] = inv(interference + m[l] * np.eye(N_l[l])) @ H_list[l] @ U[:, l:l + 1]
+            V[l] = inv(interference + n[l] * np.eye(N_l[l])) @ H_list[l] @ U[:, l:l + 1]
             V[l] = V[l] / norm(V[l])
 
-        # 步骤⑥: 重新计算 G 和 F
-        G_prime = np.zeros((L, L), dtype=np.complex128)
+        # 步骤⑥: 重新计算 G 和 F。  最优功率分配: [ 1.69240102+0.j  9.2556927 +0.j 14.6089108 +0.j] 最优功率分配: [ 9.48074892+0.j  3.03579283+0.j 14.73444136+0.j]
+        G_prime = np.zeros((L, L))
         for l in range(L):
             for i in range(L):
-                G_prime[l, i] = np.abs(U[l].conj().T @ H_list[i].conj().T @ U[:, i:i + 1]) ** 2
-
-        step_prime, gamma_prime = bcd_for_wsrm(G_prime, w, m, P_bar, y)
-        p = inv(np.eye(L) - np.diag(gamma) @ F) @ np.diag(gamma) @ n
+                G_prime[l, i] = np.abs(U[:, i:i + 1].T @ H_list[i].T @ V[l]) ** 2
 
         F_prime = np.zeros((L, L))
         for i in range(L):
@@ -116,24 +117,19 @@ def wsrm_algorithm(H_list, w, m, n, P_bar, max_iter=100, epsilon=1e-6):
                 if i != j:
                     F_prime[i, j] = G_prime[i, j] / G_prime[i, i]
 
-
-
-        # 步骤⑦-⑨: 再次调用 iteration_for_subproblem
-        til_gamma_prime = iteration_for_subproblem(B_prime, w)
-        y_L2_prime = np.exp(til_gamma_prime) / (1 + np.exp(til_gamma_prime))
-        p_prime = inv(np.eye(L) - np.diag(np.exp(til_gamma_prime)) @ F) @ np.diag(np.exp(til_gamma_prime)) @ n
-
+        step_prime, p_prime, gamma_prime = bcd_for_wsrm(G_prime, w, m, n, P_bar, y)
+        print("p_prime:", p_prime)
         # 步骤⑩: 更新发射波束成形 U
         for l in range(L):
-            interference = sum(p_prime[j] * H_list[j].conj().T @ V[j] @ V[j].conj().T @ H_list[j]
+            interference = sum(p_prime[j] * H_list[j].T @ V[j] @ V[j].T @ H_list[j]
                                for j in range(L) if j != l)
-            u_l = inv(interference + n[l] * np.eye(N)) @ H_list[l].conj().T @ V[l]
+            u_l = inv(interference + m[l] * np.eye(N)) @ H_list[l].T @ V[l]
             U[:, l:l + 1] = u_l / norm(u_l)
 
         # 步骤⑪: 检查收敛条件
-        if norm(p_prime - p) < epsilon and norm(U - U) < epsilon:
+        if norm(p_prime - p) < epsilon:
             break
-
+        print("U:", U)
     return p, U, V
 
 if __name__ == '__main__':
@@ -141,8 +137,14 @@ if __name__ == '__main__':
     N = 4  # 发射天线数
     L = 3  # 用户数
     N_l = [2, 2, 2]  # 每个用户的接收天线数
-    H_list = [np.random.randn(N_l[l], N) + 1j * np.random.randn(N_l[l], N) for l in range(L)]
-    w = np.ones(L) / L  # 均匀权重
+    # H_list = [np.random.randn(N_l[l], N) + 1j * np.random.randn(N_l[l], N) for l in range(L)]
+    H_list = [np.array([[1.0, 0.3, 0.1, -0.2],
+            [0.5, 1.2, -0.3, 0.4]]),
+            np.array([[0.8, 0.2, 0.5, 1.0],
+                [-0.4, 1.1, 0.3, 0.6]]),
+            np.array([[0.7, -0.3, 1.4, 0.1],
+                [0.2, 0.9, -0.5, 1.2]])]
+    w = (np.ones(L) / L).reshape(L,1)  # 均匀权重
     m = np.ones(L)  # 功率权重
     n = 0.1 * np.ones(L)  # 噪声功率
     P_bar = 10.0  # 总功率约束
