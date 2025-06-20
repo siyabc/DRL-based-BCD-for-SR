@@ -5,7 +5,7 @@ from scipy.linalg import inv, norm
 
 def iteration_for_subproblem(B, b):
     z = np.random.rand(len(b))
-    tol = 10e-9
+    tol = 10e-5
     err = 1
     while err>tol:
         z_temp = z
@@ -51,7 +51,7 @@ def bcd_for_wsrm(G,w, sigma,m, p_bar,  y_init):
     return step, p, gamma
 
 
-def wsrm_algorithm(H_list, w, m, n, P_bar, max_iter=1000, epsilon=1e-1):
+def wsrm_algorithm(H_list, w, m, n, P_bar, max_iter=1000, epsilon=1e-3):
     """
     完整的WSRM算法实现，使用 iteration_for_subproblem 替代步骤2和7.
 
@@ -81,19 +81,17 @@ def wsrm_algorithm(H_list, w, m, n, P_bar, max_iter=1000, epsilon=1e-1):
     V = [v / norm(v) for v in V]  # 归一化 v_l
     y = np.random.rand(3) * 1
 
+
     for _ in range(max_iter):
+        p_pre = p
+        U_pre = U
+        V_prev = V.copy()
         print("_:", _)
         # 步骤①: 计算 G 和 F 矩阵
         G = np.zeros((L, L))
         for l in range(L):
             for i in range(L):
                 G[l, i] = np.abs(V[l].T @ H_list[l] @ U[:, i:i + 1]) ** 2
-
-        F = np.zeros((L, L))
-        for i in range(L):
-            for j in range(L):
-                if i != j:
-                    F[i, j] = G[i, j] / G[i, i]
 
         step, p, gamma = bcd_for_wsrm(G, w, n, m, P_bar, y)
         print("p:",p)
@@ -104,6 +102,11 @@ def wsrm_algorithm(H_list, w, m, n, P_bar, max_iter=1000, epsilon=1e-1):
                                for j in range(L) if j != l)
             V[l] = inv(interference + n[l] * np.eye(N_l[l])) @ H_list[l] @ U[:, l:l + 1]
             V[l] = V[l] / norm(V[l])
+
+        V_diff = 0.0
+        for l in range(L):
+            V_diff += norm(V[l] - V_prev[l]) ** 2  # 累加所有用户的Frobenius范数平方
+        V_diff = np.sqrt(V_diff)  # 总差异的L2范数
 
         # 步骤⑥: 重新计算 G 和 F。  最优功率分配: [ 1.69240102+0.j  9.2556927 +0.j 14.6089108 +0.j] 最优功率分配: [ 9.48074892+0.j  3.03579283+0.j 14.73444136+0.j]
         G_prime = np.zeros((L, L))
@@ -127,7 +130,7 @@ def wsrm_algorithm(H_list, w, m, n, P_bar, max_iter=1000, epsilon=1e-1):
             U[:, l:l + 1] = u_l / norm(u_l)
 
         # 步骤⑪: 检查收敛条件
-        if norm(p_prime - p) < epsilon:
+        if norm(p_pre - p) < epsilon and norm(U_pre-U) < epsilon and V_diff < epsilon:
             break
         print("U:", U)
     return p, U, V
