@@ -47,6 +47,7 @@ def bcd_for_wsrm(G,w, sigma,m, p_bar,  y_init):
     # print("gamma1:", gamma1)
     # print("gamma2:", gamma2)
     # print("gamma3:", gamma3)
+    L = len(w)
     p = inv(np.eye(L) - np.diag(gamma) @ F) @ np.diag(gamma) @ v
     return step, p, gamma
 
@@ -86,7 +87,7 @@ def wsrm_algorithm(H_list, w, m, n, P_bar, max_iter=1000, epsilon=1e-3):
         p_pre = p
         U_pre = U
         V_prev = V.copy()
-        print("_:", _)
+        # print("_:", _)
         # 步骤①: 计算 G 和 F 矩阵
         G = np.zeros((L, L))
         for l in range(L):
@@ -94,7 +95,7 @@ def wsrm_algorithm(H_list, w, m, n, P_bar, max_iter=1000, epsilon=1e-3):
                 G[l, i] = np.abs(V[l].T @ H_list[l] @ U[:, i:i + 1]) ** 2
 
         step, p, gamma = bcd_for_wsrm(G, w, n, m, P_bar, y)
-        print("p:",p)
+        # print("p:",p)
 
         # 步骤⑤: 更新接收波束成形 V
         for l in range(L):
@@ -121,7 +122,7 @@ def wsrm_algorithm(H_list, w, m, n, P_bar, max_iter=1000, epsilon=1e-3):
                     F_prime[i, j] = G_prime[i, j] / G_prime[i, i]
 
         step_prime, p_prime, gamma_prime = bcd_for_wsrm(G_prime, w, m, n, P_bar, y)
-        print("p_prime:", p_prime)
+        # print("p_prime:", p_prime)
         # 步骤⑩: 更新发射波束成形 U
         for l in range(L):
             interference = sum(p_prime[j] * H_list[j].T @ V[j] @ V[j].T @ H_list[j]
@@ -132,7 +133,9 @@ def wsrm_algorithm(H_list, w, m, n, P_bar, max_iter=1000, epsilon=1e-3):
         # 步骤⑪: 检查收敛条件
         if norm(p_pre - p) < epsilon and norm(U_pre-U) < epsilon and V_diff < epsilon:
             break
-        print("U:", U)
+        # print("U:", U)
+    obj_updated = w.T.dot(np.log(1 + gamma))
+    print("=====obj_updated:", obj_updated)
     return p, U, V
 
 if __name__ == '__main__':

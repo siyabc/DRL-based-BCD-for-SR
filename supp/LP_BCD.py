@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.linalg import pinv, norm
-
+from IP_BCD import iteration_for_subproblem,bcd_for_wsrm
 
 def zf_mrc_beamforming(H_list):
     """
@@ -60,7 +60,21 @@ if __name__ == "__main__":
 
     # 计算 ZF 和 MRC 波束成形
     U, V = zf_mrc_beamforming(H_list)
+    G = np.zeros((L, L))
+    for l in range(L):
+        for i in range(L):
+            G[l, i] = np.abs(V[l].T @ H_list[l] @ U[:, i:i + 1]) ** 2
 
+    w = (np.ones(L) / L).reshape(L, 1)  # 均匀权重
+    m = np.ones(L)  # 功率权重
+    n = 0.1 * np.ones(L)  # 噪声功率
+    P_bar = 10.0  # 总功率约束
+    y = np.random.rand(3) * 1
+
+    step, p, gamma = bcd_for_wsrm(G, w, n, m, P_bar, y)
+    print("p:", p)
+    obj_updated = w.T.dot(np.log(1 + gamma))
+    print("=====obj_updated:", obj_updated)
     # 打印结果
     print("发射波束成形矩阵 U (列已归一化):")
     print(U)
