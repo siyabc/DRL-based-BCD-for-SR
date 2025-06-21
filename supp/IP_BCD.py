@@ -5,7 +5,7 @@ from scipy.linalg import inv, norm
 
 def iteration_for_subproblem(B, b):
     z = np.random.rand(len(b))
-    tol = 10e-5
+    tol = 10e-4
     err = 1
     while err>tol:
         z_temp = z
@@ -52,7 +52,7 @@ def bcd_for_wsrm(G,w, sigma,m, p_bar,  y_init):
     return step, p, gamma
 
 
-def wsrm_algorithm(H_list, w, m, n, P_bar, max_iter=1000, epsilon=1e-3):
+def wsrm_algorithm(H_list, w, m, n, P_bar, max_iter=1000, epsilon=1e-2):
     """
     完整的WSRM算法实现，使用 iteration_for_subproblem 替代步骤2和7.
 
@@ -80,7 +80,7 @@ def wsrm_algorithm(H_list, w, m, n, P_bar, max_iter=1000, epsilon=1e-3):
     U = U / norm(U, axis=0)  # 归一化列向量
     V = [np.random.randn(N_l[l], 1) + np.random.randn(N_l[l], 1) for l in range(L)]
     V = [v / norm(v) for v in V]  # 归一化 v_l
-    y = np.random.rand(3) * 1
+    y = np.random.rand(L) * 1
 
 
     for _ in range(max_iter):
@@ -135,14 +135,14 @@ def wsrm_algorithm(H_list, w, m, n, P_bar, max_iter=1000, epsilon=1e-3):
             break
         # print("U:", U)
     obj_updated = w.T.dot(np.log(1 + gamma))
-    print("=====obj_updated:", obj_updated)
-    return p, U, V
+    # print("=====obj_updated:", obj_updated)
+    return p, U, V,obj_updated
 
 if __name__ == '__main__':
     # 生成随机数据示例
     N = 4  # 发射天线数
-    L = 3  # 用户数
-    N_l = [2, 2, 2]  # 每个用户的接收天线数
+    L = 4  # 用户数
+    N_l = [2]*L  # 每个用户的接收天线数
     # H_list = [np.random.randn(N_l[l], N) + 1j * np.random.randn(N_l[l], N) for l in range(L)]
     H_list = [np.array([[1.0, 0.3, 0.1, -0.2],
             [0.5, 1.2, -0.3, 0.4]]),
@@ -156,5 +156,5 @@ if __name__ == '__main__':
     P_bar = 10.0  # 总功率约束
 
     # 运行算法
-    p_opt, U_opt, V_opt = wsrm_algorithm(H_list, w, m, n, P_bar)
+    p_opt, U_opt, V_opt, obj_updated = wsrm_algorithm(H_list, w, m, n, P_bar)
     print("最优功率分配:", p_opt)
