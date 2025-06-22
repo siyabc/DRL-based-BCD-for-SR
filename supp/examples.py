@@ -6,13 +6,13 @@ import time
 
 
 #---
-N = 64  # 发射天线数
+N = 128  # 发射天线数
 L = 32  # 用户数
 N_l = [2]*L  # 接收天线数
 w = (np.ones(L) / L).reshape(L, 1)
 m = np.ones(L)
 n = 0.1 * np.ones(L)
-P_bar = 10.0
+P_bar = 3*L
 num_trials = 10  # 试验次数
 
 acc_list = []
