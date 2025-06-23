@@ -6,13 +6,13 @@ import time
 
 
 #---
-N = 128  # 发射天线数
-L = 32  # 用户数
+N = 4  # 发射天线数
+L = 4  # 用户数
 N_l = [2]*L  # 接收天线数
 w = (np.ones(L) / L).reshape(L, 1)
 m = np.ones(L)
 n = 0.1 * np.ones(L)
-P_bar = 3*L
+P_bar = 4*L
 num_trials = 10  # 试验次数
 
 acc_list = []
@@ -47,8 +47,9 @@ for trial in range(num_trials):
     wsrm_time_list.append(wsrm_time)
     IP_obj_list.append(IP_obj)
 
-    acc = IP_obj / LP_obj
+    acc =  LP_obj/IP_obj
     acc_list.append(acc)
+    print("acc:",acc)
 
 # 计算统计结果
 mean_acc = np.mean(acc_list)
